@@ -38,7 +38,7 @@ FACTORS = [
     ("tbill91",       "91-Day T-Bill Yield",                 "%",   +1),
     ("preity",        "PREITY Ratio (P/E × 91-Day)",         "",    +1),
     ("yield_gap",     "Yield Gap (10Y − Earnings Yield)",    "pp",  +1),
-    ("in_us_spread",  "India 10Y − US 10Y Spread",           "pp",  +1),
+    ("in_us_spread",  "India 10Y − US 10Y Spread",           "pp",  -1),
 ]
 
 BANDS = [
