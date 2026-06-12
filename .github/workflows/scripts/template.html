@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equity Valuation Index — PMS AIF LEAPS™</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>/*__CHARTJS__*/</script>
+<script>/*__ADAPTER__*/</script>
+<style>
+:root{
+  --navy-deep:#0B1B30; --navy:#16304F; --navy-soft:#27425F;
+  --gold:#C8A24B; --gold-soft:#E9DCBA; --gold-faint:#F3EBD6;
+  --paper:#F8F5EE; --card:#FFFFFF; --ink:#222730; --muted:#6B7280;
+  --rule:#E4DCC9;
+  --b1:#1F6B4E; --b2:#5C9A6F; --b3:#C8A24B; --b4:#C2622E; --b5:#962B25;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Archivo',sans-serif;background:var(--paper);color:var(--ink);font-size:15px;line-height:1.55}
+.mono{font-family:'IBM Plex Mono',monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+
+/* ---------- masthead ---------- */
+header{background:var(--navy-deep);color:#fff;border-bottom:3px solid var(--gold)}
+.mast{display:flex;justify-content:space-between;align-items:baseline;padding:20px 0 16px;gap:16px;flex-wrap:wrap}
+.brand{font-family:'Fraunces',serif;font-weight:700;font-size:25px;letter-spacing:.4px}
+.brand sup{color:var(--gold);font-size:11px;letter-spacing:0}
+.brand .leaps{color:var(--gold)}
+.mast-right{text-align:right}
+.kicker{font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:600}
+.asof{font-size:12.5px;color:#AEBBCB;margin-top:3px}
+.asof b{color:#fff}
+
+/* ---------- hero ---------- */
+.hero{background:linear-gradient(180deg,var(--navy-deep) 0%,var(--navy) 100%);color:#fff;padding:34px 0 30px}
+.hero-grid{display:grid;grid-template-columns:330px 1fr;gap:44px;align-items:stretch}
+.hero h1{font-family:'Fraunces',serif;font-weight:600;font-size:21px;line-height:1.25;color:var(--gold-soft);margin-bottom:18px}
+.score{font-family:'Fraunces',serif;font-weight:700;font-size:108px;line-height:.92;letter-spacing:-2px}
+.score small{font-size:34px;color:#8FA0B5;font-weight:400;letter-spacing:0}
+.bandchip{display:inline-block;margin-top:14px;padding:7px 16px;border-radius:3px;font-weight:700;font-size:14.5px;letter-spacing:1.6px;text-transform:uppercase;color:#fff}
+.hero-stats{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;font-size:12.5px;color:#AEBBCB}
+.hero-stats b{display:block;font-size:17px;color:#fff;font-weight:600}
+.chart-hero{background:rgba(255,255,255,.04);border:1px solid rgba(200,162,75,.28);border-radius:6px;padding:16px 18px 10px;display:flex;flex-direction:column}
+.chart-hero h3{font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:8px}
+.chart-hero .cbox{flex:1;position:relative;min-height:280px}
+
+/* ---------- ribbon ---------- */
+.ribbon-sec{padding:26px 0 8px}
+.sec-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px}
+.sec-label em{color:var(--gold);font-style:normal}
+.ribbon{display:flex;height:34px;border-radius:3px;overflow:hidden;border:1px solid var(--rule)}
+.ribbon i{flex:1}
+.ribbon-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12.5px}
+.legend span{display:flex;align-items:center;gap:7px;color:var(--ink)}
+.legend i{width:13px;height:13px;border-radius:2px;display:inline-block}
+.legend small{color:var(--muted)}
+
+/* ---------- snapshot ---------- */
+.snap{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:24px 0 8px}
+.snap div{background:var(--card);padding:13px 14px}
+.snap label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+.snap b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--navy)}
+
+/* ---------- sections ---------- */
+section{padding:34px 0 8px}
+h2{font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:var(--navy-deep);margin-bottom:4px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:20px;max-width:760px}
+.goldrule{width:54px;height:3px;background:var(--gold);margin:10px 0 14px}
+
+/* ---------- scoreboard ---------- */
+table.score-tbl{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--rule);border-radius:6px;overflow:hidden;font-size:13.5px}
+.score-tbl th{background:var(--navy-deep);color:var(--gold-soft);font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;font-weight:600;text-align:left;padding:11px 14px}
+.score-tbl td{padding:11px 14px;border-top:1px solid #EFEAD9;vertical-align:middle}
+.score-tbl tr:nth-child(even) td{background:#FCFAF4}
+.score-tbl .num{font-family:'IBM Plex Mono',monospace;font-weight:500;text-align:right;white-space:nowrap}
+.pbar{position:relative;height:9px;background:linear-gradient(90deg,var(--b1),var(--b2),var(--b3),var(--b4),var(--b5));border-radius:5px;min-width:130px}
+.pbar i{position:absolute;top:-3.5px;width:3px;height:16px;background:var(--navy-deep);border:1px solid #fff;border-radius:1px;transform:translateX(-50%)}
+.reading{font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.dirnote{font-size:11px;color:var(--muted)}
+
+/* ---------- factor grid ---------- */
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.fcard{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:14px 16px 8px}
+.fcard h4{font-size:13px;font-weight:600;color:var(--navy-deep);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.fcard h4 b{font-family:'IBM Plex Mono',monospace;font-size:14.5px;color:var(--gold);font-weight:600}
+.fcard .meta{font-size:11px;color:var(--muted);margin:2px 0 6px}
+.fcard .cbox{position:relative;height:150px}
+
+/* ---------- EPS ---------- */
+.eps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:20px}
+.eps-bar-card{background:var(--card);border:1px solid var(--rule);border-radius:6px;padding:18px 20px 12px}
+.eps-bar-card .cbox{position:relative;height:300px}
+table.eps-tbl{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:16px;background:var(--card);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.eps-tbl th{background:var(--navy-deep);color:var(--gold-soft);font-size:10.5px;letter-spacing:1.8px;text-transform:uppercase;font-weight:600;padding:10px 14px;text-align:right}
+.eps-tbl th:first-child{text-align:left}
+.eps-tbl td{padding:10px 14px;border-top:1px solid #EFEAD9;text-align:right;font-family:'IBM Plex Mono',monospace}
+.eps-tbl td:first-child{text-align:left;font-family:'Archivo',sans-serif;font-weight:600}
+.pos{color:var(--b1)} .neg{color:var(--b5)}
+
+/* ---------- methodology / footer ---------- */
+.method{background:var(--gold-faint);border:1px solid var(--gold-soft);border-radius:6px;padding:22px 26px;font-size:13.5px}
+.method h3{font-family:'Fraunces',serif;font-size:18px;color:var(--navy-deep);margin-bottom:10px}
+.method p{margin-bottom:9px;color:#3C4250}
+.method b{color:var(--navy-deep)}
+footer{background:var(--navy-deep);color:#9FB0C2;margin-top:44px;padding:30px 0 34px;font-size:12px;line-height:1.7;border-top:3px solid var(--gold)}
+footer .fbrand{font-family:'Fraunces',serif;color:#fff;font-size:17px;font-weight:600;margin-bottom:8px}
+footer .fbrand span{color:var(--gold)}
+footer a{color:var(--gold-soft);text-decoration:none}
+.disc{margin-top:12px;padding-top:12px;border-top:1px solid #27425F}
+
+@media(max-width:980px){
+  .hero-grid{grid-template-columns:1fr}
+  .fgrid,.eps-grid{grid-template-columns:1fr 1fr}
+  .snap{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:640px){
+  .fgrid,.eps-grid{grid-template-columns:1fr}
+  .snap{grid-template-columns:repeat(2,1fr)}
+  .score{font-size:84px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap mast">
+    <div class="brand">PMS AIF <span class="leaps">LEAPS</span><sup>™</sup></div>
+    <div class="mast-right">
+      <div class="kicker">Equity Valuation Index · Multifactor Desk</div>
+      <div class="asof">Data as of <b id="asof"></b> · <span id="span"></span> · <span id="nobs"></span> daily observations</div>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Where do Indian equities stand on the valuation spectrum today?</h1>
+      <div class="score"><span id="evi-score"></span><small>/100</small></div>
+      <div class="bandchip" id="evi-band"></div>
+      <div class="hero-stats">
+        <div>30-day change<b id="evi-delta"></b></div>
+        <div>Historical percentile<b id="evi-pctl"></b></div>
+        <div>Factors in composite<b>11 · equal weight</b></div>
+        <div>History since<b>March 2003</b></div>
+      </div>
+    </div>
+    <div class="chart-hero">
+      <h3>Composite EVI — full history with valuation regimes</h3>
+      <div class="cbox"><canvas id="ch-evi"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<div class="ribbon-sec">
+  <div class="sec-label">Valuation Regime Ribbon <em>· every trading day, 2003 → today</em></div>
+  <div class="ribbon" id="ribbon"></div>
+  <div class="ribbon-axis" id="ribbon-axis"></div>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="snap" id="snap"></div>
+
+<section>
+  <h2>Factor Scoreboard</h2>
+  <div class="goldrule"></div>
+  <p class="sub">Each prime factor against its own full history since 2003. The marker shows today's percentile position on the value–expensive spectrum.</p>
+  <div style="overflow-x:auto">
+  <table class="score-tbl">
+    <thead><tr><th>Prime Factor</th><th style="text-align:right">Current</th><th style="text-align:right">Median</th><th style="text-align:right">Range</th><th>Percentile Position</th><th style="text-align:right">Pctl</th><th>Reading</th></tr></thead>
+    <tbody id="score-body"></tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Prime Factor Charts</h2>
+  <div class="goldrule"></div>
+  <p class="sub">Weekly-sampled history for each of the eleven factors. The dashed gold line marks the long-run median.</p>
+  <div class="fgrid" id="fgrid"></div>
+</section>
+
+<section>
+  <h2>Earnings Desk — EPS &amp; Growth</h2>
+  <div class="goldrule"></div>
+  <p class="sub">Trailing index EPS for Nifty 50, Nifty Midcap 150 and Nifty Smallcap 250, with compounded EPS growth measured off the latest reading.</p>
+  <div class="eps-grid" id="eps-grid"></div>
+  <div class="eps-bar-card">
+    <div class="sec-label">EPS CAGR off latest entry <em>· 1Y / 3Y / 5Y / 7Y</em></div>
+    <div class="cbox"><canvas id="ch-eps-cagr"></canvas></div>
+  </div>
+  <table class="eps-tbl">
+    <thead><tr><th>Index</th><th>Latest EPS</th><th>1Y CAGR</th><th>3Y CAGR</th><th>5Y CAGR</th><th>7Y CAGR</th></tr></thead>
+    <tbody id="eps-body"></tbody>
+  </table>
+</section>
+
+<section>
+  <div class="method">
+    <h3>Methodology — How the EVI is built</h3>
+    <p><b>Composite construction.</b> Eleven prime factors — P/E, P/B, Market Cap to GDP in ₹ and $ terms, Earnings Yield, India 10-Year G-Sec, BEER Ratio, 91-Day T-Bill, PREITY Ratio, Yield Gap, and the India–US 10-Year spread — are each converted to a percentile rank against their full daily history since March 2003.</p>
+    <p><b>Direction adjustment.</b> Factors where a higher reading signals cheapness (Earnings Yield) are inverted, so every factor reads on a single scale: <b>0 = cheapest in history, 100 = richest in history</b>. The composite EVI is the equal-weighted average of the eleven adjusted percentiles.</p>
+    <p><b>Interpretation bands.</b> 0–20 Deep Value · 20–40 Value · 40–60 Fair Value · 60–80 Expensive · 80–100 Extreme Expensive. Share of history spent in each band is shown in the legend above.</p>
+    <p><b>Market Cap to GDP.</b> Both series use calendar-year-matched GDP (IMF/MoSPI table, editable in the repository); ₹-terms GDP is derived at the year-average USD/INR where an explicit ₹ figure is not supplied. PREITY = P/E × 91-Day T-Bill; BEER = 10-Year yield ÷ Earnings Yield; Yield Gap = 10-Year yield − Earnings Yield.</p>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="fbrand">PMS AIF <span>LEAPS</span>™ — India's Trusted Investment Portal</div>
+    <div>Balaji S · NISM-Certified Research Analyst · <a href="https://www.pmsaifleaps.com">PMSAIFleaps.com</a> · balaji.s@pmsaifleaps.com · +91-98406 94674</div>
+    <div class="disc">
+      <b>Disclaimer:</b> This dashboard is published for educational and informational purposes only. It presents observation-only valuation analytics and does not constitute investment advice, a recommendation, or a solicitation to buy or sell any security. No Buy/Sell/Hold ratings or target prices are expressed or implied. Past valuation regimes and past performance are not indicative of future results. Investments in securities markets are subject to market risks; read all related documents carefully before investing. PMS AIF LEAPS™ is a distributor of investment products and is not a SEBI-Registered Investment Adviser. Data is compiled from public sources believed reliable but not guaranteed. Built <span id="built"></span>.
+    </div>
+  </div>
+</footer>
+
+<script>
+const D = /*__DATA__*/null;
+
+/* ============ 1. CONTENT — renders with zero dependencies ============ */
+const bandFor = v => D.bands.find(b => v >= b.lo && v < (b.hi===100?100.0001:b.hi)) || D.bands[D.bands.length-1];
+const fmt = (v,d=2) => v==null ? '\u2014' : Number(v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+document.getElementById('asof').textContent = D.asof;
+document.getElementById('span').textContent = D.span;
+document.getElementById('nobs').textContent = D.n_obs.toLocaleString('en-IN');
+document.getElementById('evi-score').textContent = D.evi.score.toFixed(1);
+const chip = document.getElementById('evi-band');
+chip.textContent = D.evi.band; chip.style.background = D.evi.color;
+document.getElementById('evi-delta').textContent = (D.evi.delta30>=0?'+':'')+D.evi.delta30.toFixed(1)+' pts';
+document.getElementById('evi-pctl').textContent = D.evi.pctl.toFixed(1)+'th';
+document.getElementById('built').textContent = D.built;
+
+/* regime ribbon + axis + legend */
+const rb = document.getElementById('ribbon');
+D.ribbon.forEach(v=>{ const i=document.createElement('i'); i.style.background=bandFor(v).color; i.title='EVI '+v; rb.appendChild(i); });
+const ax = document.getElementById('ribbon-axis');
+{
+  const y0 = +D.evi.series[0][0].slice(0,4), y1 = +D.asof.slice(-4);
+  const ticks = []; for(let y=y0; y<y1; y+=4) ticks.push(String(y)); ticks.push('Today');
+  ticks.forEach(t=>{const s=document.createElement('span');s.textContent=t;ax.appendChild(s);});
+}
+const lg = document.getElementById('legend');
+D.bands.forEach(b=>{
+  const s=document.createElement('span');
+  s.innerHTML=`<i style="background:${b.color}"></i>${b.name} <small>(${b.lo}\u2013${b.hi}) \u00b7 ${D.evi.band_share[b.name]}% of history</small>`;
+  lg.appendChild(s);
+});
+
+/* snapshot strip */
+const snapDefs=[['Nifty 50',fmt(D.snapshot.nifty,0)],['Nifty P/E',fmt(D.snapshot.pe)],['Nifty P/B',fmt(D.snapshot.pb)],
+  ['MCap (US$ Tn)',fmt(D.snapshot.mcap_tn)],['India 10Y',fmt(D.snapshot.in10y)+'%'],
+  ['Midcap 150 P/E',fmt(D.snapshot.mid_pe)],['Smallcap 250 P/E',fmt(D.snapshot.small_pe)]];
+document.getElementById('snap').innerHTML = snapDefs.map(s=>`<div><label>${s[0]}</label><b>${s[1]}</b></div>`).join('');
+
+/* factor scoreboard */
+document.getElementById('score-body').innerHTML = D.factors.map(f=>{
+  const b=bandFor(f.pctl);
+  return `<tr>
+    <td><b>${f.label}</b><div class="dirnote">${f.direction}</div></td>
+    <td class="num">${fmt(f.current)}</td>
+    <td class="num">${fmt(f.median)}</td>
+    <td class="num">${fmt(f.min)} \u2013 ${fmt(f.max)}</td>
+    <td><div class="pbar"><i style="left:${f.pctl}%"></i></div></td>
+    <td class="num">${f.pctl.toFixed(1)}</td>
+    <td><span class="reading" style="color:${b.color}">${b.name}</span></td>
+  </tr>`;
+}).join('');
+
+/* factor cards (canvas filled later) */
+const fg = document.getElementById('fgrid');
+const factorCanvases = [];
+D.factors.forEach(f=>{
+  const card=document.createElement('div'); card.className='fcard';
+  card.innerHTML=`<h4>${f.label}<b>${fmt(f.current)}</b></h4>
+    <div class="meta">median ${fmt(f.median)} \u00b7 pctl ${f.pctl.toFixed(0)} \u00b7 ${bandFor(f.pctl).name.toLowerCase()}</div>
+    <div class="cbox"><canvas></canvas></div>`;
+  fg.appendChild(card);
+  factorCanvases.push([f, card.querySelector('canvas')]);
+});
+
+/* EPS cards (canvas filled later) */
+const eg=document.getElementById('eps-grid');
+const epsDefs=[['n50_eps','Nifty 50 EPS','#16304F'],['mid_eps','Midcap 150 EPS','#C8A24B'],['small_eps','Smallcap 250 EPS','#962B25']];
+const epsCanvases=[];
+epsDefs.forEach(([k,t,col])=>{
+  const card=document.createElement('div'); card.className='fcard';
+  card.innerHTML=`<h4>${t}<b>${fmt(D.eps_series[k][D.eps_series[k].length-1][1],1)}</b></h4>
+    <div class="meta">trailing EPS \u00b7 weekly sampled</div><div class="cbox"><canvas></canvas></div>`;
+  eg.appendChild(card);
+  epsCanvases.push([k,col,card.querySelector('canvas')]);
+});
+
+/* EPS growth table */
+const horizons=['y1','y3','y5','y7'], hLabels=['1 Year','3 Years','5 Years','7 Years'];
+document.getElementById('eps-body').innerHTML = D.eps_growth.map(g=>
+  `<tr><td>${g.index}</td><td>${fmt(g.latest,1)}</td>`+
+  horizons.map(h=>{const v=g[h];return `<td class="${v==null?'':(v>=0?'pos':'neg')}">${v==null?'\u2014':(v>=0?'+':'')+v.toFixed(2)+'%'}</td>`;}).join('')+'</tr>'
+).join('');
+
+/* ============ 2. CHARTS — guarded, content above never blocked ============ */
+try{
+if (typeof Chart === 'undefined') throw new Error('Chart.js not available');
+Chart.defaults.font.family = "'Archivo',sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#6B7280';
+
+const bandBg = {
+  id:'bandBg',
+  beforeDraw(c){
+    const {ctx, chartArea:a, scales:{y}} = c;
+    if(!a) return;
+    D.bands.forEach(b=>{
+      const top = y.getPixelForValue(Math.min(b.hi,y.max));
+      const bot = y.getPixelForValue(Math.max(b.lo,y.min));
+      ctx.fillStyle = b.color+'26';
+      ctx.fillRect(a.left, top, a.right-a.left, bot-top);
+    });
+  }
+};
+new Chart(document.getElementById('ch-evi'),{
+  type:'line',
+  data:{datasets:[
+    {label:'EVI (daily)', data:D.evi.series.map(p=>({x:p[0],y:p[1]})), borderColor:'rgba(233,220,186,.55)', borderWidth:1, pointRadius:0, tension:.2},
+    {label:'30-day average', data:D.evi.smooth.map(p=>({x:p[0],y:p[1]})), borderColor:'#C8A24B', borderWidth:2.2, pointRadius:0, tension:.25}
+  ]},
+  options:{
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:'index',intersect:false},
+    scales:{
+      x:{type:'time', time:{unit:'year'}, grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'#8FA0B5',maxTicksLimit:12}},
+      y:{min:0,max:100, grid:{color:'rgba(255,255,255,.08)'}, ticks:{color:'#8FA0B5',stepSize:20}}
+    },
+    plugins:{legend:{labels:{color:'#CBD6E2',boxWidth:18,boxHeight:2}}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)} (${bandFor(c.parsed.y).name})`}}}
+  },
+  plugins:[bandBg]
+});
+
+factorCanvases.forEach(([f,cv])=>{
+  const pts=D.factor_series[f.key].map(p=>({x:p[0],y:p[1]}));
+  new Chart(cv,{
+    type:'line',
+    data:{datasets:[
+      {data:pts, borderColor:'#16304F', borderWidth:1.4, pointRadius:0, tension:.2},
+      {data:[{x:pts[0].x,y:f.median},{x:pts[pts.length-1].x,y:f.median}], borderColor:'#C8A24B', borderDash:[5,4], borderWidth:1.4, pointRadius:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{x:{type:'time',time:{unit:'year'},ticks:{maxTicksLimit:6},grid:{display:false}},
+              y:{grid:{color:'#F0EBDC'},ticks:{maxTicksLimit:5}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.parsed.y.toFixed(2)}}}}
+  });
+});
+
+epsCanvases.forEach(([k,col,cv])=>{
+  new Chart(cv,{
+    type:'line',
+    data:{datasets:[{data:D.eps_series[k].map(p=>({x:p[0],y:p[1]})),borderColor:col,borderWidth:1.6,pointRadius:0,tension:.2,fill:{target:'origin',above:col+'14'}}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      scales:{x:{type:'time',time:{unit:'year'},ticks:{maxTicksLimit:6},grid:{display:false}},
+              y:{grid:{color:'#F0EBDC'},ticks:{maxTicksLimit:5}}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' EPS '+c.parsed.y.toFixed(1)}}}}
+  });
+});
+
+const idxColors=['#16304F','#C8A24B','#962B25'];
+new Chart(document.getElementById('ch-eps-cagr'),{
+  type:'bar',
+  data:{labels:hLabels, datasets:D.eps_growth.map((g,i)=>({
+    label:g.index, data:horizons.map(h=>g[h]), backgroundColor:idxColors[i], borderRadius:3, maxBarThickness:54
+  }))},
+  options:{responsive:true,maintainAspectRatio:false,animation:false,
+    scales:{y:{grid:{color:'#F0EBDC'},ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}},
+    plugins:{legend:{position:'top',labels:{boxWidth:14,boxHeight:10}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y==null?'\u2014':c.parsed.y.toFixed(2)+'% CAGR'}`}}}}
+});
+}catch(e){ console.warn('Charts unavailable:', e.message); }
+</script>
+</body>
+</html>
