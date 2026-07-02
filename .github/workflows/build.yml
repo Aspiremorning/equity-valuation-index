@@ -2,23 +2,31 @@ name: Build EVI Dashboard
 
 on:
   schedule:
-    # 12:30 UTC = 6:00 PM IST, after market close & data entry.
     - cron: "30 12 * * 1-5"
-  workflow_dispatch: {}        # manual "Run workflow" button
+  workflow_dispatch: {}
   push:
     branches: [main]
     paths: ["data/**", "scripts/**"]
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -27,14 +35,14 @@ jobs:
           SHEET_CSV_URL: ${{ vars.SHEET_CSV_URL }}
         run: python scripts/build.py
 
-      - name: Commit & push if changed
-        run: |
-          git config user.name "evi-bot"
-          git config user.email "actions@github.com"
-          git add docs/index.html
-          if git diff --cached --quiet; then
-            echo "No changes."
-          else
-            git commit -m "EVI auto-build $(date -u +'%d-%b-%Y %H:%M UTC')"
-            git push
-          fi
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
