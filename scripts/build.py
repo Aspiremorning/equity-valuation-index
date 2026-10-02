@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_CSV = os.path.join(ROOT, "data", "evi_data.csv")
-GDP_CSV = os.path.join(ROOT, "data", "gdp.csv")
 TEMPLATE = os.path.join(ROOT, "scripts", "template.html")
 OUT_HTML = os.path.join(ROOT, "docs", "index.html")
 
@@ -27,6 +26,9 @@ COLS = ["sno","date","mcap_inr_cr","mcap_usd","usdinr","mcap_usd_tn","mcap_gdp",
 NUMERIC = COLS[2:]
 
 # ---- 11 prime factors: key, label, unit, direction (+1: high = expensive, -1: high = cheap)
+# NOTE: Market Cap to GDP (both ₹ and $ rows) reads the sheet's own `mcap_gdp` column (col 7)
+# directly — no recomputation. Because a MCap/GDP ratio is currency-neutral, both rows show
+# the same maintained figure.
 FACTORS = [
     ("n50_pe",        "P/E Ratio — Nifty 50",                "x",   +1),
     ("pb",            "P/B Ratio — Nifty 50",                "x",   +1),
@@ -78,7 +80,6 @@ def load_rows():
             text = f.read()
     reader = csv.reader(io.StringIO(text))
     raw = list(reader)
-    # Detect header row (contains 'date' or 'Date')
     start = 0
     for i, row in enumerate(raw[:5]):
         if any("date" in str(c).lower() for c in row):
@@ -97,11 +98,9 @@ def load_rows():
             rec[key] = to_float(row[j]) if j < len(row) else None
         rows.append(rec)
     rows.sort(key=lambda r: r["date"])
-    # de-duplicate dates (keep last entry)
     dedup = {}
     for r in rows: dedup[r["date"]] = r
     rows = [dedup[k] for k in sorted(dedup)]
-    # forward-fill nulls / zeros in always-positive columns
     ffill_cols = [c for c in NUMERIC if c not in ("yield_gap", "in_us_spread")]
     prev = {}
     for r in rows:
@@ -115,22 +114,10 @@ def load_rows():
                 prev[c] = v
     return rows
 
-def load_gdp():
-    gdp = {}
-    with open(GDP_CSV, encoding="utf-8-sig") as f:
-        for rec in csv.DictReader(f):
-            y = int(rec["year"])
-            usd = to_float(rec["gdp_usd_bn"])
-            inr = to_float(rec.get("gdp_inr_lakh_cr"))
-            gdp[y] = {"usd_bn": usd, "inr_lakh_cr": inr}
-    return gdp
-
 def percentile_ranks(values):
-    """Percentile rank (0-100) of each value within the full sample."""
     pairs = sorted((v, i) for i, v in enumerate(values))
     n = len(values)
     out = [0.0] * n
-    rank = 0
     k = 0
     while k < n:
         j = k
@@ -166,39 +153,14 @@ def nearest_on_or_before(rows, target):
 
 def main():
     rows = load_rows()
-    gdp = load_gdp()
     n = len(rows)
     print(f"{n} daily observations | {rows[0]['date']:%d-%b-%Y} → {rows[-1]['date']:%d-%b-%Y}")
 
-    # yearly average USDINR (for deriving ₹ GDP when not provided)
-    fx_sum, fx_cnt = {}, {}
+    # ---- Market Cap to GDP: read the sheet's own `mcap_gdp` column (col 7) directly.
+    #      Both ₹ and $ rows use this single maintained figure (ratio is currency-neutral).
     for r in rows:
-        y = r["date"].year
-        if r["usdinr"]:
-            fx_sum[y] = fx_sum.get(y, 0) + r["usdinr"]
-            fx_cnt[y] = fx_cnt.get(y, 0) + 1
-    fx_avg = {y: fx_sum[y] / fx_cnt[y] for y in fx_sum}
-
-    # Recompute MCap/GDP in both currencies, year-matched
-    last_gdp_year = max(y for y in gdp if gdp[y]["usd_bn"])
-    for r in rows:
-        y = min(r["date"].year, last_gdp_year)
-        g = gdp.get(y) or gdp[last_gdp_year]
-        usd_tn = g["usd_bn"] / 1000.0
-        r["mcapgdp_usd"] = (r["mcap_usd_tn"] / usd_tn * 100.0) if r["mcap_usd_tn"] else None
-        # ₹ GDP: explicit MoSPI figure if given (lakh cr), else $GDP × CY-avg USDINR
-        if g["inr_lakh_cr"]:
-            inr_cr = g["inr_lakh_cr"] * 100000.0
-        else:
-            inr_cr = g["usd_bn"] * 100.0 * fx_avg.get(y, fx_avg[max(fx_avg)])  # $bn→₹cr: bn×fx×100
-        r["mcapgdp_inr"] = (r["mcap_inr_cr"] / inr_cr * 100.0) if r["mcap_inr_cr"] else None
-
-    # forward-fill the two computed series too
-    prev = {}
-    for r in rows:
-        for c in ("mcapgdp_usd", "mcapgdp_inr"):
-            if r[c] is None and c in prev: r[c] = prev[c]
-            elif r[c] is not None: prev[c] = r[c]
+        r["mcapgdp_inr"] = r["mcap_gdp"]
+        r["mcapgdp_usd"] = r["mcap_gdp"]
 
     # ---- Composite EVI: equal-weighted direction-adjusted percentile ranks
     pct = {}
@@ -209,9 +171,8 @@ def main():
             ranks = [100.0 - x for x in ranks]
         pct[key] = ranks
     evi = [sum(pct[k][i] for k, *_ in FACTORS) / len(FACTORS) for i in range(n)]
-    evi_pct = percentile_ranks(evi)  # composite's own historical percentile
+    evi_pct = percentile_ranks(evi)
 
-    # 30-day smoothing
     evi_smooth = []
     for i in range(n):
         w = evi[max(0, i - 29):i + 1]
@@ -222,13 +183,11 @@ def main():
     cur_band, cur_color = band_of(cur_evi)
     evi_30d_ago = evi[max(0, n - 31)]
 
-    # regime statistics: % of history in each band
     band_share = {b[2]: 0 for b in BANDS}
     for v in evi:
         band_share[band_of(v)[0]] += 1
     band_share = {k: round(100.0 * v / n, 1) for k, v in band_share.items()}
 
-    # ---- factor table meta
     factor_meta = []
     for key, label, unit, direction in FACTORS:
         vals = [r[key] for r in rows if r[key] is not None]
@@ -244,7 +203,6 @@ def main():
             "pctl": round(pct[key][-1], 1),
         })
 
-    # ---- EPS analytics (Nifty 50 / Midcap 150 / Smallcap 250)
     eps_defs = [("n50_eps", "Nifty 50"), ("mid_eps", "Nifty Midcap 150"), ("small_eps", "Nifty Smallcap 250")]
     eps_growth = []
     for key, name in eps_defs:
@@ -257,7 +215,6 @@ def main():
             g[f"y{yrs}"] = round(c * 100, 2) if c is not None else None
         eps_growth.append(g)
 
-    # ---- chart series (weekly decimation + guaranteed last point)
     def series(key, dec=5, start=0):
         pts = []
         for i in range(start, n):
@@ -317,8 +274,6 @@ def main():
     print(f"EVI = {cur_evi:.1f}  →  {cur_band}")
     for fm in factor_meta:
         print(f"  {fm['label']:<42} {fm['current']:>10}   pctl {fm['pctl']:>5}")
-    for g in eps_growth:
-        print(f"  EPS {g['index']:<20} 1Y {g['y1']}%  3Y {g['y3']}%  5Y {g['y5']}%  7Y {g['y7']}%")
     print(f"Wrote {OUT_HTML} ({os.path.getsize(OUT_HTML)//1024} KB)")
 
 if __name__ == "__main__":
