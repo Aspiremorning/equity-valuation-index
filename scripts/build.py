@@ -32,8 +32,7 @@ NUMERIC = COLS[2:]
 FACTORS = [
     ("n50_pe",        "P/E Ratio — Nifty 50",                "x",   +1),
     ("pb",            "P/B Ratio — Nifty 50",                "x",   +1),
-    ("mcapgdp_inr",   "Market Cap to GDP — ₹ terms",         "%",   +1),
-    ("mcapgdp_usd",   "Market Cap to GDP — $ terms",         "%",   +1),
+    ("mcapgdp_inr",   "Market Cap to GDP",                   "%",   +1),
     ("n50_ey",        "Earnings Yield — Nifty 50",           "%",   -1),
     ("in10y",         "India 10-Year G-Sec Yield",           "%",   +1),
     ("beer",          "BEER Ratio (10Y ÷ Earnings Yield)",   "x",   +1),
@@ -160,7 +159,6 @@ def main():
     #      Both ₹ and $ rows use this single maintained figure (ratio is currency-neutral).
     for r in rows:
         r["mcapgdp_inr"] = r["mcap_gdp"]
-        r["mcapgdp_usd"] = r["mcap_gdp"]
 
     # ---- Composite EVI: equal-weighted direction-adjusted percentile ranks
     pct = {}
