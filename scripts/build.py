@@ -201,6 +201,132 @@ def main():
             "pctl": round(pct[key][-1], 1),
         })
 
+    # ======== Broad Market EVI: Large (Nifty 50) + Mid (150) + Small (250) ========
+    # Base 10 factors reuse their full-history percentiles (pct[]). Midcap 150 PE and
+    # Smallcap 250 PE are added, each ranked over its OWN reliable history from 31-Mar-2021.
+    RELIABLE = datetime(2021, 3, 31)
+    bstart = next((i for i, r in enumerate(rows) if r["date"] >= RELIABLE), None)
+
+    def subset_pct(key):
+        out = [None] * n
+        idxs = [i for i in range(bstart, n) if rows[i][key] is not None and rows[i][key] > 0]
+        vals = [rows[i][key] for i in idxs]
+        pr = percentile_ranks(vals)
+        for j, i in enumerate(idxs):
+            out[i] = pr[j]
+        return out
+
+    mid_pct = subset_pct("mid_pe")
+    small_pct = subset_pct("small_pe")
+    base_keys = [k for k, *_ in FACTORS]  # the 10 large-cap/macro factors (already direction-adjusted)
+
+    broad = [None] * n
+    for i in range(bstart, n):
+        comps = [pct[k][i] for k in base_keys]
+        if mid_pct[i] is not None: comps.append(mid_pct[i])
+        if small_pct[i] is not None: comps.append(small_pct[i])
+        broad[i] = sum(comps) / len(comps)
+
+    bvals = [broad[i] for i in range(bstart, n) if broad[i] is not None]
+    cur_broad = broad[-1]
+    broad_band, broad_color = band_of(cur_broad)
+    broad_30 = broad[max(bstart, n - 31)]
+    below = sum(1 for x in bvals if x < cur_broad); eq = sum(1 for x in bvals if x == cur_broad)
+    broad_pctl = 100.0 * (below + eq / 2.0) / len(bvals)
+
+    # decimated series + 30d smooth over the broad window
+    broad_full_sm = []
+    for i in range(bstart, n):
+        w = [broad[j] for j in range(max(bstart, i - 29), i + 1) if broad[j] is not None]
+        broad_full_sm.append(sum(w) / len(w))
+    broad_series = [[rows[i]["date"].strftime("%Y-%m-%d"), round(broad[i], 2)]
+                    for k, i in enumerate(range(bstart, n)) if k % 3 == 0 or i == n - 1]
+    broad_smooth = [[rows[bstart + k]["date"].strftime("%Y-%m-%d"), round(v, 2)]
+                    for k, v in enumerate(broad_full_sm) if k % 3 == 0 or k == len(broad_full_sm) - 1]
+
+    # segment valuation snapshot (PE + its own-history percentile)
+    seg = []
+    for name, key, p in [("Nifty 50", "n50_pe", pct["n50_pe"][-1]),
+                         ("Nifty Midcap 150", "mid_pe", mid_pct[-1]),
+                         ("Nifty Smallcap 250", "small_pe", small_pct[-1])]:
+        bn, _ = band_of(p)
+        seg.append({"name": name, "pe": round(latest[key], 2), "pctl": round(p, 1), "band": bn})
+
+    broad_payload = {
+        "score": round(cur_broad, 1), "band": broad_band, "color": broad_color,
+        "pctl": round(broad_pctl, 1), "delta30": round(cur_broad - broad_30, 1),
+        "n_obs": len(bvals), "start": rows[bstart]["date"].strftime("%b %Y"),
+        "large_score": round(cur_evi, 1),
+        "series": broad_series, "smooth": broad_smooth, "segments": seg,
+    }
+
+    # ======== Pillar-Weighted EVI: 4 equal pillars, de-duplicated, whole market ========
+    # Removes equal-weight multicollinearity AND broadens to the full cap spectrum. Each of
+    # four themes gets 1/4, regardless of how many sub-metrics sit inside. Earnings Yield
+    # (the exact reciprocal of P/E) is dropped as a pure duplicate. Base factors use their
+    # direction-adjusted full-history percentiles (pct[]); the SMID pillar uses Midcap 150 and
+    # Smallcap 250 P/E ranked over their reliable window (from 31-Mar-2021), so the composite
+    # exists from that date onward.
+    LABELS = {k: lbl for k, lbl, u, d in FACTORS}
+    LABELS["mid_pe"] = "Midcap 150 P/E"
+    LABELS["small_pe"] = "Smallcap 250 P/E"
+    pct_lookup = dict(pct)
+    pct_lookup["mid_pe"] = mid_pct
+    pct_lookup["small_pe"] = small_pct
+    PILLARS = [
+        ("Absolute Valuation",     ["n50_pe", "pb", "mcapgdp_inr"]),
+        ("Equity vs Bonds",        ["yield_gap", "beer", "preity"]),
+        ("Rate Environment",       ["in10y", "tbill91", "in_us_spread"]),
+        ("Market Breadth (SMID)",  ["mid_pe", "small_pe"]),
+    ]
+    pillar_vals = {}
+    for pname, keys in PILLARS:
+        arr = [None] * n
+        for i in range(n):
+            vs = [pct_lookup[k][i] for k in keys if pct_lookup[k][i] is not None]
+            if len(vs) == len(keys):
+                arr[i] = sum(vs) / len(vs)
+        pillar_vals[pname] = arr
+    pillar_evi = [None] * n
+    for i in range(n):
+        ps = [pillar_vals[p][i] for p, _ in PILLARS]
+        if all(x is not None for x in ps):
+            pillar_evi[i] = sum(ps) / len(ps)
+    pstart = next((i for i in range(n) if pillar_evi[i] is not None), 0)
+
+    cur_pillar = pillar_evi[-1]
+    pillar_band, pillar_color = band_of(cur_pillar)
+    pillar_30 = next((pillar_evi[j] for j in range(n - 31, n) if pillar_evi[j] is not None), cur_pillar)
+    pvals = [pillar_evi[i] for i in range(pstart, n) if pillar_evi[i] is not None]
+    below = sum(1 for x in pvals if x < cur_pillar); eq = sum(1 for x in pvals if x == cur_pillar)
+    pillar_own = 100.0 * (below + eq / 2.0) / len(pvals)
+
+    pillar_full_sm = []
+    for i in range(pstart, n):
+        w = [pillar_evi[j] for j in range(max(pstart, i - 29), i + 1) if pillar_evi[j] is not None]
+        pillar_full_sm.append(sum(w) / len(w))
+
+    pillar_detail = []
+    for pname, keys in PILLARS:
+        pv = pillar_vals[pname][-1]
+        pb_band, _ = band_of(pv)
+        pillar_detail.append({
+            "name": pname, "score": round(pv, 1), "band": pb_band,
+            "members": [{"label": LABELS[k], "pctl": round(pct_lookup[k][-1], 1)} for k in keys],
+        })
+
+    pillar_payload = {
+        "score": round(cur_pillar, 1), "band": pillar_band, "color": pillar_color,
+        "pctl": round(pillar_own, 1), "delta30": round(cur_pillar - pillar_30, 1),
+        "equal_score": round(cur_evi, 1), "start": rows[pstart]["date"].strftime("%b %Y"),
+        "n_obs": len(pvals),
+        "pillars": pillar_detail,
+        "series": [[rows[i]["date"].strftime("%Y-%m-%d"), round(pillar_evi[i], 2)]
+                   for k, i in enumerate(range(pstart, n)) if k % 3 == 0 or i == n - 1],
+        "smooth": [[rows[pstart + k]["date"].strftime("%Y-%m-%d"), round(v, 2)]
+                   for k, v in enumerate(pillar_full_sm) if k % 3 == 0 or k == len(pillar_full_sm) - 1],
+    }
+
     eps_defs = [("n50_eps", "Nifty 50"), ("mid_eps", "Nifty Midcap 150"), ("small_eps", "Nifty Smallcap 250")]
     eps_growth = []
     for key, name in eps_defs:
@@ -254,6 +380,8 @@ def main():
             "small_eps": series("small_eps", start=mid_start),
         },
         "eps_growth": eps_growth,
+        "broad": broad_payload,
+        "pillar": pillar_payload,
         "bands": [{"lo": b[0], "hi": min(b[1], 100), "name": b[2], "color": b[3]} for b in BANDS],
     }
 
@@ -269,9 +397,15 @@ def main():
     with open(OUT_HTML, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"EVI = {cur_evi:.1f}  →  {cur_band}")
+    print(f"Large-cap EVI = {cur_evi:.1f}  →  {cur_band}")
     for fm in factor_meta:
         print(f"  {fm['label']:<42} {fm['current']:>10}   pctl {fm['pctl']:>5}")
+    print(f"Broad Market EVI = {cur_broad:.1f}  →  {broad_band}  (from {broad_payload['start']}, {len(bvals)} obs)")
+    for s in seg:
+        print(f"  {s['name']:<22} PE {s['pe']:>7}   pctl {s['pctl']:>5}  {s['band']}")
+    print(f"Pillar-Weighted EVI = {cur_pillar:.1f}  →  {pillar_band}")
+    for p in pillar_detail:
+        print(f"  {p['name']:<20} {p['score']:>5}  {p['band']}")
     print(f"Wrote {OUT_HTML} ({os.path.getsize(OUT_HTML)//1024} KB)")
 
 if __name__ == "__main__":

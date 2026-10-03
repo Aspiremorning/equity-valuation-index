@@ -64,6 +64,27 @@ header{background:var(--navy-deep);color:#fff;border-bottom:3px solid var(--gold
 .snap label{display:block;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
 .snap b{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:var(--navy)}
 
+/* ---------- broad market evi ---------- */
+.broad-grid{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:stretch}
+.broad-score-card{background:var(--navy-deep);color:#fff;border:1px solid var(--navy-soft);border-radius:8px;padding:22px 24px;display:flex;flex-direction:column;justify-content:center}
+.broad-score{font-family:'Fraunces',serif;font-weight:700;font-size:78px;line-height:.9;letter-spacing:-1.5px}
+.broad-score small{font-size:26px;color:#8FA0B5;font-weight:400}
+.broad-score-card .bandchip{align-self:flex-start}
+.broad-stats{margin-top:16px;font-size:12.5px;color:#AEBBCB;display:grid;gap:7px}
+.broad-stats b{color:#fff;font-weight:600}
+.broad-chart-card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:16px 18px 10px}
+
+/* ---------- pillar evi ---------- */
+.pillar-grid{display:grid;grid-template-columns:300px 1fr;gap:22px;align-items:stretch}
+.pillar-chart-card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:16px 18px 10px}
+.pillar-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:20px}
+.pillar-card{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:16px 18px;border-top:4px solid var(--gold)}
+.pillar-card h4{font-family:'Fraunces',serif;font-size:15px;color:var(--navy-deep);margin-bottom:2px}
+.pillar-card .pscore{font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:600;color:var(--navy)}
+.pillar-card .pband{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin:2px 0 10px}
+.pillar-card .pmem{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;padding:4px 0;border-top:1px dashed #EAE2CE}
+.pillar-card .pmem b{font-family:'IBM Plex Mono',monospace;color:var(--ink);font-weight:500}
+
 /* ---------- sections ---------- */
 section{padding:34px 0 8px}
 h2{font-family:'Fraunces',serif;font-weight:600;font-size:26px;color:var(--navy-deep);margin-bottom:4px}
@@ -112,12 +133,12 @@ footer a{color:var(--gold-soft);text-decoration:none}
 .disc{margin-top:12px;padding-top:12px;border-top:1px solid #27425F}
 
 @media(max-width:980px){
-  .hero-grid{grid-template-columns:1fr}
-  .fgrid,.eps-grid{grid-template-columns:1fr 1fr}
+  .hero-grid,.broad-grid,.pillar-grid{grid-template-columns:1fr}
+  .fgrid,.eps-grid,.pillar-cols{grid-template-columns:1fr 1fr}
   .snap{grid-template-columns:repeat(4,1fr)}
 }
 @media(max-width:640px){
-  .fgrid,.eps-grid{grid-template-columns:1fr}
+  .fgrid,.eps-grid,.pillar-cols{grid-template-columns:1fr}
   .snap{grid-template-columns:repeat(2,1fr)}
   .score{font-size:84px}
 }
@@ -144,7 +165,7 @@ footer a{color:var(--gold-soft);text-decoration:none}
       <div class="hero-stats">
         <div>30-day change<b id="evi-delta"></b></div>
         <div>Historical percentile<b id="evi-pctl"></b></div>
-        <div>Factors in composite<b>11 · equal weight</b></div>
+        <div>Factors in composite<b>10 · equal weight</b></div>
         <div>History since<b>March 2003</b></div>
       </div>
     </div>
@@ -166,6 +187,47 @@ footer a{color:var(--gold-soft);text-decoration:none}
 
 <div class="snap" id="snap"></div>
 
+<section id="broad-sec">
+  <h2>Broad Market EVI — Large + Mid + Small</h2>
+  <div class="goldrule"></div>
+  <p class="sub">The headline EVI above tracks Nifty 50, which is large-cap only. This broad gauge blends Nifty 50, Nifty Midcap 150 and Nifty Smallcap 250 valuations with the same economy-wide factors — a fuller read on where the <em>whole</em> market stands. Midcap and Smallcap data is reliable from April 2021, so this gauge and its percentile are measured over that window.</p>
+  <div class="broad-grid">
+    <div class="broad-score-card">
+      <div class="broad-score"><span id="broad-score"></span><small>/100</small></div>
+      <div class="bandchip" id="broad-band"></div>
+      <div class="broad-stats" id="broad-stats"></div>
+    </div>
+    <div class="broad-chart-card">
+      <div class="sec-label">Broad Market EVI <em>· <span id="broad-span"></span> → today</em></div>
+      <div class="cbox" style="position:relative;height:255px"><canvas id="ch-broad"></canvas></div>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+  <table class="score-tbl" style="margin-top:20px">
+    <thead><tr><th>Segment</th><th style="text-align:right">P/E</th><th>Percentile Position</th><th style="text-align:right">Pctl</th><th>Reading</th></tr></thead>
+    <tbody id="broad-seg-body"></tbody>
+  </table>
+  </div>
+</section>
+
+<section id="pillar-sec">
+  <h2>Pillar-Weighted EVI — Whole Market, De-duplicated</h2>
+  <div class="goldrule"></div>
+  <p class="sub">The most rigorous gauge. It fixes two problems at once. First, double-counting: the headline EVI gives every factor an equal vote, but several measure the same thing — Earnings Yield is the reciprocal of P/E, and BEER, PREITY and the Yield Gap are all "equities versus bonds." Second, large-cap bias: Nifty 50 alone is not the whole economy. This gauge groups the inputs into four equal pillars — Absolute Valuation, Equity vs Bonds, Rate Environment, and Market Breadth (Midcap + Smallcap) — so no theme or segment can dominate. Because mid/small data is reliable from April 2021, this gauge and its percentile are measured over that window.</p>
+  <div class="pillar-grid">
+    <div class="broad-score-card">
+      <div class="broad-score"><span id="pillar-score"></span><small>/100</small></div>
+      <div class="bandchip" id="pillar-band"></div>
+      <div class="broad-stats" id="pillar-stats"></div>
+    </div>
+    <div class="pillar-chart-card">
+      <div class="sec-label">Pillar-Weighted EVI <em>· <span id="pillar-span"></span> → today</em></div>
+      <div class="cbox" style="position:relative;height:255px"><canvas id="ch-pillar"></canvas></div>
+    </div>
+  </div>
+  <div class="pillar-cols" id="pillar-cols"></div>
+</section>
+
 <section>
   <h2>Factor Scoreboard</h2>
   <div class="goldrule"></div>
@@ -181,7 +243,7 @@ footer a{color:var(--gold-soft);text-decoration:none}
 <section>
   <h2>Prime Factor Charts</h2>
   <div class="goldrule"></div>
-  <p class="sub">Weekly-sampled history for each of the eleven factors. The dashed gold line marks the long-run median.</p>
+  <p class="sub">Weekly-sampled history for each of the ten factors. The dashed gold line marks the long-run median.</p>
   <div class="fgrid" id="fgrid"></div>
 </section>
 
@@ -203,10 +265,12 @@ footer a{color:var(--gold-soft);text-decoration:none}
 <section>
   <div class="method">
     <h3>Methodology — How the EVI is built</h3>
-    <p><b>Composite construction.</b> Eleven prime factors — P/E, P/B, Market Cap to GDP in ₹ and $ terms, Earnings Yield, India 10-Year G-Sec, BEER Ratio, 91-Day T-Bill, PREITY Ratio, Yield Gap, and the India–US 10-Year spread — are each converted to a percentile rank against their full daily history since March 2003.</p>
-    <p><b>Direction adjustment.</b> Factors where a higher reading signals cheapness (Earnings Yield, and the India–US 10-Year spread — a wider sovereign risk premium means more compensation on offer, i.e., cheaper; a compressed spread means risk priced for perfection) are inverted, so every factor reads on a single scale: <b>0 = cheapest in history, 100 = richest in history</b>. The composite EVI is the equal-weighted average of the eleven adjusted percentiles.</p>
+    <p><b>Headline EVI (Nifty 50).</b> Ten prime factors — P/E, P/B, Market Cap to GDP, Earnings Yield, India 10-Year G-Sec, BEER Ratio, 91-Day T-Bill, PREITY Ratio, Yield Gap, and the India–US 10-Year spread — are each converted to a percentile rank against their full daily history since March 2003.</p>
+    <p><b>Direction adjustment.</b> Factors where a higher reading signals cheapness (Earnings Yield, and the India–US 10-Year spread — a wider sovereign risk premium means more compensation on offer, i.e., cheaper; a compressed spread means risk priced for perfection) are inverted, so every factor reads on a single scale: <b>0 = cheapest in history, 100 = richest in history</b>. The composite EVI is the equal-weighted average of the adjusted percentiles.</p>
+    <p><b>Broad Market EVI.</b> A separate gauge that adds Nifty Midcap 150 P/E and Nifty Smallcap 250 P/E to the ten headline factors (twelve in all, equal-weighted). Each factor is ranked against its own full history — the ten headline factors since 2003, and the Midcap/Smallcap P/Es over their reliable window from April 2021. Because mid- and small-cap valuations are only reliable from April 2021, this gauge's own historical percentile is measured over that ~5.5-year window and should be read as a shorter-horizon, bull-market-inclusive base, not a 23-year one.</p>
+    <p><b>Pillar-Weighted EVI.</b> The most rigorous gauge, fixing two problems. The headline equal-weight composite double-counts correlated signals — Earnings Yield is the reciprocal of P/E, and BEER, PREITY and the Yield Gap are all equity-versus-bond measures — which silently overweights the valuation and rate themes; and it covers Nifty 50 only. The pillar gauge groups the inputs into four equal pillars (Absolute Valuation — P/E, P/B, MCap/GDP; Equity vs Bonds — Yield Gap, BEER, PREITY; Rate Environment — 10Y, 91-Day, India–US spread; Market Breadth — Midcap 150 and Smallcap 250 P/E), each weighted one-quarter regardless of how many sub-metrics it holds. Earnings Yield is dropped as a pure duplicate of P/E. Because the Midcap/Smallcap pillar is reliable only from April 2021, this gauge and its percentile are measured over that window.</p>
     <p><b>Interpretation bands.</b> 0–20 Deep Value · 20–40 Value · 40–60 Fair Value · 60–80 Expensive · 80–100 Extreme Expensive. Share of history spent in each band is shown in the legend above.</p>
-    <p><b>Market Cap to GDP.</b> Both series use calendar-year-matched GDP (IMF/MoSPI table, editable in the repository); ₹-terms GDP is derived at the year-average USD/INR where an explicit ₹ figure is not supplied. PREITY = P/E × 91-Day T-Bill; BEER = 10-Year yield ÷ Earnings Yield; Yield Gap = 10-Year yield − Earnings Yield.</p>
+    <p><b>Market Cap to GDP.</b> Read directly from the maintained data sheet. PREITY = P/E × 91-Day T-Bill; BEER = 10-Year yield ÷ Earnings Yield; Yield Gap = 10-Year yield − Earnings Yield.</p>
   </div>
 </section>
 
@@ -215,7 +279,9 @@ footer a{color:var(--gold-soft);text-decoration:none}
 <footer>
   <div class="wrap">
     <div class="fbrand">PMS AIF <span>LEAPS</span>™ — India's Trusted Investment Portal</div>
-    <div>Balaji S · NISM-Certified Research Analyst · <a href="https://www.pmsaifleaps.com">PMSAIFleaps.com</a> · balaji.s@pmsaifleaps.com · +91-98406 94674</div>
+    <div>NISM-Certified Research Analyst · SPJIMR — S. P. Jain Institute of Management &amp; Research (The Knowledge Champion Certification Programme, Finance)</div>
+    <div style="margin-top:4px">ARN: 336905 · APRN: APRN07892</div>
+    <div style="margin-top:4px">+91 94296 93332 · <a href="https://www.pmsaifleaps.com">pmsaifleaps.com</a> · info@pmsaifleaps.com</div>
     <div class="disc">
       <b>Disclaimer:</b> This dashboard is published for educational and informational purposes only. It presents observation-only valuation analytics and does not constitute investment advice, a recommendation, or a solicitation to buy or sell any security. No Buy/Sell/Hold ratings or target prices are expressed or implied. Past valuation regimes and past performance are not indicative of future results. Investments in securities markets are subject to market risks; read all related documents carefully before investing. PMS AIF LEAPS™ is a distributor of investment products and is not a SEBI-Registered Investment Adviser. Data is compiled from public sources believed reliable but not guaranteed. Built <span id="built"></span>.
     </div>
@@ -260,6 +326,47 @@ const snapDefs=[['Nifty 50',fmt(D.snapshot.nifty,0)],['Nifty P/E',fmt(D.snapshot
   ['MCap (US$ Tn)',fmt(D.snapshot.mcap_tn)],['India 10Y',fmt(D.snapshot.in10y)+'%'],
   ['Midcap 150 P/E',fmt(D.snapshot.mid_pe)],['Smallcap 250 P/E',fmt(D.snapshot.small_pe)]];
 document.getElementById('snap').innerHTML = snapDefs.map(s=>`<div><label>${s[0]}</label><b>${s[1]}</b></div>`).join('');
+
+/* broad market evi */
+document.getElementById('broad-score').textContent = D.broad.score.toFixed(1);
+const bchip = document.getElementById('broad-band');
+bchip.textContent = D.broad.band; bchip.style.background = D.broad.color;
+document.getElementById('broad-span').textContent = D.broad.start;
+document.getElementById('broad-stats').innerHTML =
+  `<div>Large-cap EVI (Nifty 50)<b>${D.broad.large_score.toFixed(1)} · ${bandFor(D.broad.large_score).name}</b></div>`+
+  `<div>30-day change<b>${(D.broad.delta30>=0?'+':'')+D.broad.delta30.toFixed(1)} pts</b></div>`+
+  `<div>Percentile (since ${D.broad.start})<b>${D.broad.pctl.toFixed(1)}th</b></div>`+
+  `<div>Observations<b>${D.broad.n_obs.toLocaleString('en-IN')} trading days</b></div>`;
+document.getElementById('broad-seg-body').innerHTML = D.broad.segments.map(s=>{
+  const b=bandFor(s.pctl);
+  return `<tr>
+    <td><b>${s.name}</b></td>
+    <td class="num">${fmt(s.pe)}</td>
+    <td><div class="pbar"><i style="left:${s.pctl}%"></i></div></td>
+    <td class="num">${s.pctl.toFixed(1)}</td>
+    <td><span class="reading" style="color:${b.color}">${b.name}</span></td>
+  </tr>`;
+}).join('');
+
+/* pillar-weighted evi */
+document.getElementById('pillar-score').textContent = D.pillar.score.toFixed(1);
+const pchip = document.getElementById('pillar-band');
+pchip.textContent = D.pillar.band; pchip.style.background = D.pillar.color;
+document.getElementById('pillar-span').textContent = D.pillar.start;
+document.getElementById('pillar-stats').innerHTML =
+  `<div>Headline EVI (equal-weight)<b>${D.pillar.equal_score.toFixed(1)} · ${bandFor(D.pillar.equal_score).name}</b></div>`+
+  `<div>Shift vs headline<b>${(D.pillar.score-D.pillar.equal_score>=0?'+':'')+(D.pillar.score-D.pillar.equal_score).toFixed(1)} pts</b></div>`+
+  `<div>30-day change<b>${(D.pillar.delta30>=0?'+':'')+D.pillar.delta30.toFixed(1)} pts</b></div>`+
+  `<div>Percentile (since ${D.pillar.start})<b>${D.pillar.pctl.toFixed(1)}th</b></div>`;
+document.getElementById('pillar-cols').innerHTML = D.pillar.pillars.map(p=>{
+  const b=bandFor(p.score);
+  return `<div class="pillar-card">
+    <h4>${p.name}</h4>
+    <div class="pscore">${p.score.toFixed(1)}</div>
+    <div class="pband" style="color:${b.color}">${b.name}</div>
+    ${p.members.map(m=>`<div class="pmem"><span>${m.label}</span><b>${m.pctl.toFixed(0)}</b></div>`).join('')}
+  </div>`;
+}).join('');
 
 /* factor scoreboard */
 document.getElementById('score-body').innerHTML = D.factors.map(f=>{
@@ -340,6 +447,44 @@ new Chart(document.getElementById('ch-evi'),{
       y:{min:0,max:100, grid:{color:'rgba(255,255,255,.08)'}, ticks:{color:'#8FA0B5',stepSize:20}}
     },
     plugins:{legend:{labels:{color:'#CBD6E2',boxWidth:18,boxHeight:2}}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)} (${bandFor(c.parsed.y).name})`}}}
+  },
+  plugins:[bandBg]
+});
+
+/* broad market evi chart (band-shaded, Apr 2021 → today) */
+new Chart(document.getElementById('ch-broad'),{
+  type:'line',
+  data:{datasets:[
+    {label:'Broad EVI (daily)', data:D.broad.series.map(p=>({x:p[0],y:p[1]})), borderColor:'rgba(22,48,79,.35)', borderWidth:1, pointRadius:0, tension:.2},
+    {label:'30-day average', data:D.broad.smooth.map(p=>({x:p[0],y:p[1]})), borderColor:'#962B25', borderWidth:2.2, pointRadius:0, tension:.25}
+  ]},
+  options:{
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:'index',intersect:false},
+    scales:{
+      x:{type:'time', time:{unit:'year'}, grid:{display:false}, ticks:{maxTicksLimit:8}},
+      y:{min:0,max:100, grid:{color:'#F0EBDC'}, ticks:{stepSize:20}}
+    },
+    plugins:{legend:{labels:{boxWidth:18,boxHeight:2}}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)} (${bandFor(c.parsed.y).name})`}}}
+  },
+  plugins:[bandBg]
+});
+
+/* pillar-weighted evi chart (full history, band-shaded) */
+new Chart(document.getElementById('ch-pillar'),{
+  type:'line',
+  data:{datasets:[
+    {label:'Pillar EVI (daily)', data:D.pillar.series.map(p=>({x:p[0],y:p[1]})), borderColor:'rgba(22,48,79,.3)', borderWidth:1, pointRadius:0, tension:.2},
+    {label:'30-day average', data:D.pillar.smooth.map(p=>({x:p[0],y:p[1]})), borderColor:'#16304F', borderWidth:2.2, pointRadius:0, tension:.25}
+  ]},
+  options:{
+    responsive:true, maintainAspectRatio:false, animation:false,
+    interaction:{mode:'index',intersect:false},
+    scales:{
+      x:{type:'time', time:{unit:'year'}, grid:{display:false}, ticks:{maxTicksLimit:10}},
+      y:{min:0,max:100, grid:{color:'#F0EBDC'}, ticks:{stepSize:20}}
+    },
+    plugins:{legend:{labels:{boxWidth:18,boxHeight:2}}, tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)} (${bandFor(c.parsed.y).name})`}}}
   },
   plugins:[bandBg]
 });
